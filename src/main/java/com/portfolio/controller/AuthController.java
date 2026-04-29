@@ -22,15 +22,5 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("Login successful", response));
     }
 
-    /**
-     * POST /api/auth/register-admin
-     * One-time setup endpoint. Disable or delete after first use in production.
-     */
-    @PostMapping("/register-admin")
-    public ResponseEntity<ApiResponse<String>> registerAdmin(
-            @RequestParam String username,
-            @RequestParam String password) {
-        String msg = authService.registerAdmin(username, password);
-        return ResponseEntity.ok(ApiResponse.success(msg, null));
-    }
+
 }
