@@ -1,0 +1,13 @@
+# Secret env file - never push
+.env
+
+# Maven
+target/
+
+# IntelliJ
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
