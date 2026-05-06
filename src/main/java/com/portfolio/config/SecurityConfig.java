@@ -58,6 +58,7 @@ public class SecurityConfig {
 
                         // 2. Broad Matchers for Public Data
                         .requestMatchers("/api/auth/**", "/api/contact/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/visitors/track").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/profile**", "/api/profile/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/projects**", "/api/projects/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/skills**", "/api/skills/**").permitAll()
