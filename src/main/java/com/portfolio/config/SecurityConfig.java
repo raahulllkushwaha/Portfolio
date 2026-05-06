@@ -65,7 +65,7 @@ public class SecurityConfig {
 
                         // Public Auth and Contact endpoints
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/contact").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/contact/**").permitAll()
 
                         // Public GET endpoints using double asterisks for path robustness
                         .requestMatchers(HttpMethod.GET, "/api/profile/**").permitAll()
@@ -76,7 +76,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/certifications/**").permitAll()
 
                         // Static resources & H2 Console (if needed)
-                        .requestMatchers("/h2-console/**").permitAll()
+
 
                         // All other requests (POST/PUT/DELETE on actual data) require ADMIN
                         .anyRequest().hasRole("ADMIN")
