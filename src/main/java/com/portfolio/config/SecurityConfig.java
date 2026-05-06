@@ -49,48 +49,33 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // 1. MUST DISABLE CSRF for stateless REST APIs
                 .csrf(AbstractHttpConfigurer::disable)
-
-                // 2. ENABLE CORS using the bean defined below
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
-                // 3. Set session management to STATELESS
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
-                // 4. Request Authorization
                 .authorizeHttpRequests(auth -> auth
-                        // Always allow OPTIONS for CORS pre-flight
+                        // 1. Allow EVERY Pre-flight (OPTIONS) request
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // Public Auth and Contact endpoints
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/contact/**").permitAll()
+                        // 2. Broad Matchers for Public Data
+                        .requestMatchers("/api/auth/**", "/api/contact/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/profile**", "/api/profile/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/projects**", "/api/projects/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/skills**", "/api/skills/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/experiences**", "/api/experiences/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/education**", "/api/education/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/certifications**", "/api/certifications/**").permitAll()
 
-                        // Public GET endpoints using double asterisks for path robustness
-                        .requestMatchers(HttpMethod.GET, "/api/profile/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/projects/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/skills/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/experiences/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/education/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/certifications/**").permitAll()
+                        // 3. Fallback for any other path starting with /api/
+                        .requestMatchers(HttpMethod.GET, "/api/**").permitAll()
 
-                        // Static resources & H2 Console (if needed)
-
-
-                        // All other requests (POST/PUT/DELETE on actual data) require ADMIN
+                        // 4. Secure everything else
                         .anyRequest().hasRole("ADMIN")
                 )
-
-                // 5. Fix for Browser Frame Options
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
-
-                // 6. Add JWT Filter before the standard Username/Password filter
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
-
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
