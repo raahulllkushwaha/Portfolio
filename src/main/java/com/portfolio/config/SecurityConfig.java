@@ -13,6 +13,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -33,9 +34,6 @@ public class SecurityConfig {
     @Autowired
     private JwtAuthFilter jwtAuthFilter;
 
-    @Autowired
-    private AdminUserDetailsService userDetailsService;
-
     @Value("${app.cors.allowed-origins}")
     private String[] allowedOrigins;
 
@@ -52,26 +50,47 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(AbstractHttpConfigurer::disable)
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        // Public GET endpoints — anyone can view the portfolio
-                        .requestMatchers(HttpMethod.GET, "/api/profile", "/api/profile/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/projects", "/api/projects/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/skills", "/api/skills/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/experiences", "/api/experiences/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/education", "/api/education/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/certifications", "/api/certifications/**").permitAll()
+                // 1. Explicitly disable CSRF for APIs
+                .csrf(AbstractHttpConfigurer::disable)
 
-                        // Contact form — public POST
-                        .requestMatchers(HttpMethod.POST, "/api/contact").permitAll()
-                        // Auth
+                // 2. Attach our custom CORS configuration
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
+                // 3. Stateless sessions (no cookies)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+                // 4. Permission Handshake
+                .authorizeHttpRequests(auth -> auth
+                        // Allow browser pre-flight OPTIONS requests
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // Auth & Public POST endpoints
                         .requestMatchers("/api/auth/**").permitAll()
-                        // Everything else requires ADMIN role
+                        .requestMatchers(HttpMethod.POST, "/api/contact").permitAll()
+
+                        // Public GET endpoints - using wildcards to cover /api/projects and /api/projects/
+                        .requestMatchers(HttpMethod.GET, "/api/profile/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/projects/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/skills/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/experiences/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/education/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/certifications/**").permitAll()
+
+                        // Permit static resources and H2 (if applicable)
+                        .requestMatchers("/h2-console/**").permitAll()
+
+                        // Everything else (POST/PUT/DELETE on data) requires Admin role
                         .anyRequest().hasRole("ADMIN")
                 )
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
+                // 5. Security Header Fixes
+                .headers(headers -> headers
+                        // Disable X-Frame-Options to allow the app to work in all browsers
+                        .frameOptions(HeadersConfigurer.FrameOptionsConfig::disable)
+                )
+
+                // 6. JWT Filter
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -79,10 +98,19 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(Arrays.asList(allowedOrigins));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
+
+        // Use setAllowedOriginPatterns for more flexible matching with credentials
+        if (allowedOrigins != null && allowedOrigins.length > 0) {
+            config.setAllowedOrigins(Arrays.asList(allowedOrigins));
+        } else {
+            config.addAllowedOrigin("*");
+        }
+
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin"));
+        config.setExposedHeaders(Arrays.asList("Authorization"));
         config.setAllowCredentials(true);
+        config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
