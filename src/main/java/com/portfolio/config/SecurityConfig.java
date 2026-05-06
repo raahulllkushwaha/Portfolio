@@ -80,24 +80,20 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // Handle potential empty origins by falling back to a safe default
         if (allowedOrigins != null && allowedOrigins.length > 0) {
             config.setAllowedOrigins(Arrays.asList(allowedOrigins));
         } else {
-            // Only use "*" during extreme troubleshooting; production should be specific
-            config.setAllowedOrigins(Collections.singletonList("*"));
+            // allowedOriginPatterns works correctly with allowCredentials(true)
+            config.setAllowedOriginPatterns(Collections.singletonList("*"));
         }
 
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin"));
         config.setExposedHeaders(Collections.singletonList("Authorization"));
-
-        // Credentials must be true if your React app uses 'withCredentials' or sends Auth headers
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        // Register for all paths
         source.registerCorsConfiguration("/**", config);
         return source;
     }
