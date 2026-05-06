@@ -55,21 +55,22 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                // Public GET endpoints — anyone can view the portfolio
-                .requestMatchers(HttpMethod.GET, "/api/profile/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/projects/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/skills/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/experiences/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/education/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/certifications/**").permitAll()
-                // Contact form — public POST
-                .requestMatchers(HttpMethod.POST, "/api/contact").permitAll()
-                // Auth
-                .requestMatchers("/api/auth/**").permitAll()
-                // Everything else requires ADMIN role
-                .anyRequest().hasRole("ADMIN")
-            )
+                .authorizeHttpRequests(auth -> auth
+                        // Public GET endpoints — anyone can view the portfolio
+                        .requestMatchers(HttpMethod.GET, "/api/profile", "/api/profile/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/projects", "/api/projects/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/skills", "/api/skills/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/experiences", "/api/experiences/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/education", "/api/education/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/certifications", "/api/certifications/**").permitAll()
+
+                        // Contact form — public POST
+                        .requestMatchers(HttpMethod.POST, "/api/contact").permitAll()
+                        // Auth
+                        .requestMatchers("/api/auth/**").permitAll()
+                        // Everything else requires ADMIN role
+                        .anyRequest().hasRole("ADMIN")
+                )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
